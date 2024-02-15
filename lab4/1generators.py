@@ -3,26 +3,16 @@
 Create a generator that generates the squares of numbers up to some number N.
 """
 
-class Square:
-    def __init__(self, n):
-        self.n = n
-        self.current = 1
+def Squares(N):
+    a = 1
+    while a < N:
+        yield a**2
+        a+=1 
 
-    def __iter__(self):
-        return self
-    
-    def __next__(self):
-        if self.current <= self.n:
-            result = self.current **2
-            self.current +=1
-            return result
-        else:
-            raise StopIteration
-        
-N = int(input())
-squares = Square(N)
-for x in squares:
-    print(x)
+lim = int(input())
+
+for i in Squares(lim):
+    print(i)
 
 """
 #2
