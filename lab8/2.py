@@ -1,180 +1,139 @@
-# импорт библиотек
 import pygame
 import time
 import random
 
-snake_speed = 15
-
-# размер окна
-window_x = 720
-window_y = 480
-
-# определение цветов
-black = pygame.Color(0, 0, 0)
-white = pygame.Color(255, 255, 255)
-red = pygame.Color(255, 0, 0)
-green = pygame.Color(0, 255, 0)
-blue = pygame.Color(0, 0, 255)
-
-# инициализация
 pygame.init()
 
-# Инициализирование игрового окно
-pygame.display.set_caption('Змейка')
-game_window = pygame.display.set_mode((window_x, window_y))
+# Установка цветов
+white = (255, 255, 255)
+black = (0, 0, 0)
+red = (255, 0, 0)
+orange = (255, 165, 0)
 
-# Контроллер FPS (кадры в секунду)
-fps = pygame.time.Clock()
+WIDTH, HEIGHT = 600, 400
 
-# определение положения змеи по умолчанию
-snake_position = [100, 50]
+# Установка экрана
+screen = pygame.display.set_mode([WIDTH,HEIGHT])
+pygame.display.set_caption("Змейка")
 
-# определение первых 4 блоков тела змеи
-snake_body = [[100, 50],
-              [90, 50],
-              [80, 50],
-              [70, 50]
-              ]
+clock = pygame.time.Clock()
 
-# fruit position
-fruit_position = [random.randrange(1, (window_x // 10)) * 10,
-                  random.randrange(1, (window_y // 10)) * 10]
+snake_size = 10
+snake_speed = 5 # Тут мы можем регулировать скорость нашей змеи. Больше пикселей в секунуду -> Быстрее змея
 
-fruit_spawn = True
+message_font = pygame.font.SysFont('ubuntu', 30)
+score_font = pygame.font.SysFont('ubuntu', 25)
+level_font = pygame.font.SysFont('ubuntu', 30)
+# Определение функций
+def print_score(score):
+    text = score_font.render("Score " + str(score), True, orange)
+    screen.blit(text, [0,0])
+    
+def print_level(level):
+    text = level_font.render("Level: " + str(level), True, orange)
+    screen.blit(text, [WIDTH - 150, 0])
+    
+def draw_snake(snake_size, snake_pixels):
+    for pixel in snake_pixels:
+        pygame.draw.rect(screen, white, [pixel[0], pixel[1], snake_size, snake_size])
 
-# установка направления змеи по умолчанию к
-# право
-direction = 'RIGHT'
-change_to = direction
+def run_game():
+    global snake_speed
+    
+    game_over = False 
+    game_close = False
+    
+    x = WIDTH / 2 
+    y = HEIGHT / 2
+    
+    x_speed = 0
+    y_speed = 0
+    
+    snake_pixels = []
+    snake_length = 1
+    
+    target_x = round(random.randrange(0, WIDTH-snake_size)/ 10.0) * 10.0  # Отвечает за положение нашего яблоко, для этого даем ему рандомные значения по
+    target_y = round(random.randrange(0, HEIGHT-snake_size)/ 10.0) * 10.0 #  X и Y осям.
+    
+    level = 1
+    
+    while not game_over: # Game Loop
+        
+        while game_close:
+            screen.fill(black)
+            game_over_message = message_font.render("Game Over", True, red) # Это все можно вывести за наш гейм луп в отдельную функцию
+            screen.blit(game_over_message, [WIDTH / 3, HEIGHT / 3]) 
+            print_score(snake_length - 1)
+            pygame.display.update()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1: 
+                        game_over = True
+                        game_close = False
+                    if event.key == pygame.K_2:
+                        run_game()
+                    if event.type == pygame.QUIT:
+                        game_over = True
+                        game_close = False
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_over = True
+                
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    x_speed = -snake_size # Так как наше начальное положение змеи это центр экрана, для движения змеи
+                    y_speed = 0           # Мы имеем право сказать, что мы можем двигать ее по x-у или y-у на длину snake_size
 
-# начальная оценка
-score = 0
+                if event.key == pygame.K_RIGHT: 
+                    
+                    x_speed = snake_size
+                    y_speed = 0
+                    
+                if event.key == pygame.K_UP:
+                    x_speed = 0
+                    y_speed = -snake_size
+                
+                if event.key == pygame.K_DOWN:
+                    x_speed = 0
+                    y_speed = snake_size
+                    
+        if x >= WIDTH or x < 0 or y >= HEIGHT or y < 0: # Если координаты нашей змеи косаются наших границ экрана, то игра заканчивается
+            game_close = True
+        
+        x += x_speed # Для изменения головы нашей змеи мы создаем зависимость скорость от координат
+        y += y_speed
+        
+        screen.fill(black)
+        pygame.draw.rect(screen, orange, [target_x, target_y, snake_size, snake_size]) # Отрисовка нашего яблока
+        
+        snake_pixels.append([x,y]) # Нам нужно хранить все пиксели нашей змеи
+        
+        if len(snake_pixels) > snake_length:
+            del snake_pixels[0]
+            
+        for pixel in snake_pixels[:-1]: # Змея столкнулась сама с собой
+            if pixel == [x,y]:
+                game_close = True
+        
+        draw_snake(snake_size, snake_pixels)
+        print_score(snake_length - 1)
+        print_level(level)
+        
+        pygame.display.update()
+        
+        if x == target_x and y == target_y:
+            target_x = round(random.randrange(0, WIDTH-snake_size) / 10.0) * 10.0
+            target_y = round(random.randrange(0, HEIGHT-snake_size) / 10.0) * 10.0
+            snake_length += 1
+            level += 1
+            snake_speed += 2  # Увеличиваем скорость змеи
+            
+        clock.tick(snake_speed)
 
-
-# отображение функции Score
-def show_score(choice, color, font, size) :
-    # создание объекта шрифта score_font
-    score_font = pygame.font.SysFont(font, size)
-
-    # создать объект поверхности отображения
-    # score_surface
-    score_surface = score_font.render('Score : ' + str(score), True, color)
-
-    # создаем прямоугольный объект для текста
-    # поверхностный объект
-    score_rect = score_surface.get_rect()
-
-    # отображение текста
-    game_window.blit(score_surface, score_rect)
-
-
-# функция завершения игры
-def game_over() :
-    # создание объекта шрифта my_font
-    my_font = pygame.font.SysFont('times new roman', 50)
-
-    # создание текстовой поверхности, на которой текст
-    # будет нарисовано
-    game_over_surface = my_font.render(
-        'Your Score is : ' + str(score), True, red)
-
-    # создать прямоугольный объект для текста
-    # surface object
-    game_over_rect = game_over_surface.get_rect()
-
-    # установка положения текста
-    game_over_rect.midtop = (window_x / 2, window_y / 4)
-
-    # blit нарисует текст на экране
-    game_window.blit(game_over_surface, game_over_rect)
-    pygame.display.flip()
-
-    # через 2 секунды мы выйдем из программы
-    time.sleep(2)
-
-    # деактивация библиотеки pygame
-    pygame.quit()
-
-    # quit the program
+    pygame.quit() 
     quit()
 
-
-# Main Function
-while True :
-
-    # обработка ключевых событий
-    for event in pygame.event.get() :
-        if event.type == pygame.KEYDOWN :
-            if event.key == pygame.K_UP :
-                change_to = 'UP'
-            if event.key == pygame.K_DOWN :
-                change_to = 'DOWN'
-            if event.key == pygame.K_LEFT :
-                change_to = 'LEFT'
-            if event.key == pygame.K_RIGHT :
-                change_to = 'RIGHT'
-
-    # Если две клавиши нажаты одновременно
-    # мы не хотим, чтобы змея разделялась на две
-    # направлений одновременно
-    if change_to == 'UP' and direction != 'DOWN' :
-        direction = 'UP'
-    if change_to == 'DOWN' and direction != 'UP' :
-        direction = 'DOWN'
-    if change_to == 'LEFT' and direction != 'RIGHT' :
-        direction = 'LEFT'
-    if change_to == 'RIGHT' and direction != 'LEFT' :
-        direction = 'RIGHT'
-
-    # Перемещение змеи
-    if direction == 'UP' :
-        snake_position[1] -= 10
-    if direction == 'DOWN' :
-        snake_position[1] += 10
-    if direction == 'LEFT' :
-        snake_position[0] -= 10
-    if direction == 'RIGHT' :
-        snake_position[0] += 10
-
-    # Механизм роста тела змеи
-    # если фрукты и змеи сталкиваются, то очки
-    # будет увеличено на 10
-    snake_body.insert(0, list(snake_position))
-    if snake_position[0] == fruit_position[0] and snake_position[1] == fruit_position[1] :
-        score += 10
-        fruit_spawn = False
-    else :
-        snake_body.pop()
-
-    if not fruit_spawn :
-        fruit_position = [random.randrange(1, (window_x // 10)) * 10,
-                          random.randrange(1, (window_y // 10)) * 10]
-
-    fruit_spawn = True
-    game_window.fill(black)
-
-    for pos in snake_body :
-        pygame.draw.rect(game_window, green,
-                         pygame.Rect(pos[0], pos[1], 10, 10))
-    pygame.draw.rect(game_window, white, pygame.Rect(
-        fruit_position[0], fruit_position[1], 10, 10))
-
-    # Game Over conditions
-    if snake_position[0] < 0 or snake_position[0] > window_x - 10 :
-        game_over()
-    if snake_position[1] < 0 or snake_position[1] > window_y - 10 :
-        game_over()
-
-    # Touching the snake body
-    for block in snake_body[1 :] :
-        if snake_position[0] == block[0] and snake_position[1] == block[1] :
-            game_over()
-
-    # displaying score countinuously
-    show_score(1, white, 'times new roman', 20)
-
-    # Refresh game screen
-    pygame.display.update()
-
-    # Frame Per Second /Refresh Rate
-    fps.tick(snake_speed)
+run_game()       
+          
